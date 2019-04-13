@@ -20,3 +20,59 @@ xobj is a go library which unifies the access to various data formats or markup 
 * streaming support
 * best performance in terms of cpu usage or memory allocations
 * support every data format or a formats primitive
+
+
+## mapping rules by example
+
+```xml
+<person>
+    <!-- a comment -->
+    <name firstname="true">Frodo</name>
+    <age>42</age>
+    <address>
+        <city>Hobbingen</city>
+    </address>
+    <hobbies>
+        <hobby>eating</hobby>
+        <hobby>sleeping</hobby>   
+        <hobby>reading</hobby> 
+        <else>and another loss</else>
+    </hobbies>
+    <missing>null</missing>
+</person>
+```
+
+```json
+{
+  ".comment": "a comment",
+  "name": "Frodo",
+  "name.firstname": true,
+  "age": 42,
+  "address": {
+    "city": "Hobbingen"
+  },
+  "hobbies": ["eating","sleeping","reading","and another loss"],
+  "missing": null
+}
+```
+
+As you can see, the mapping between json and xml takes a lot of assumptions, which cannot be applied in general
+but should be a good fit in a lot of situations:
+
+* a json attribute and a xml text node in an element are interchangeable. However converting back and forth will
+cause a loss of type information for the json (e.g. boolean, number or string). The string *null* in xml will be interpreted
+as `null` in json.
+* xml attributes have no direct correspondence in json, so they are encoded as *node name*.*attrib name*.
+* xml comments are encoded as *.comment*
+* json types are guessed, from their possible natural interpretation
+* All types can be duck typed, causing further data loss. Rules:
+  * `null`: the json *null* value and the string "null" will evaluate to nil or null
+  * `float`: a bool will evaluate to 0 or 1 (true) and integers to their nearest floating point representation.
+   Anything else will evaluate to NaN.
+  * `int`: a bool will evaluate to 0 or 1 (true) and floats will be truncated. Anything else will be evaluated to 0.
+  * `string`: a bool will be evaluated to "true" or "false". Integers and floats as usual. *null* will become "null".
+  * `bool`: the number 1 or the strings "true","1" or any "tRuE" will evaluate to true, everything else false.
+
+
+
+
