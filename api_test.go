@@ -7,19 +7,19 @@ import (
 
 func TestNewObj(t *testing.T) {
 	tmp := NewObj().
-		SetBool("flag", true).
-		SetInt64("int", 123).
-		SetFloat64("float", 3.14).
-		SetString("text", "hello world").
-		SetObject("obj", NewObj().Put("say", "hello")).
-		SetArray("arr", NewArr().
+		PutBool("flag", true).
+		PutInt64("int", 123).
+		PutFloat64("float", 3.14).
+		PutString("text", "hello world").
+		PutObject("obj", NewObj().Put("say", "hello")).
+		PutArray("arr", NewArr().
 			AddBool(true).
 			AddBool(false).
 			AddFloat64(6.28).
 			AddInt64(246).
 			AddString("text in array").
 			AddArray(NewArr().AddInt64(1).AddInt64(2).AddInt64(3)).
-			AddObject(NewObj().SetString("object in", "array")))
+			AddObject(NewObj().PutString("object in", "array")))
 	fmt.Println(tmp.String())
 }
 
@@ -191,4 +191,11 @@ func TestParse3(t *testing.T) {
 		t.Fatal(err)
 	}
 	fmt.Println(arr.String())
+
+	fmt.Println(obj.OptArray("xml").
+		OptArray(3))
+	caption := obj.OptArray("xml").OptArray(3).OptObject(1).OptString("caption", "")
+	if caption != "caption" {
+		t.Fatal("unexpected", caption)
+	}
 }

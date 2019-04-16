@@ -65,7 +65,15 @@ func (o Object) AsInt64(name string) (int64, error) {
 	return asInt64(v)
 }
 
-func (o Object) SetInt64(name string, value int64) Obj {
+func (o Object) OptInt64(name string, fallback int64) int64 {
+	v, err := o.AsInt64(name)
+	if err != nil {
+		return fallback
+	}
+	return v
+}
+
+func (o Object) PutInt64(name string, value int64) Obj {
 	o[name] = value
 	return o
 }
@@ -78,7 +86,15 @@ func (o Object) AsBool(name string) (bool, error) {
 	return asBool(v)
 }
 
-func (o Object) SetBool(name string, value bool) Obj {
+func (o Object) OptBool(name string, fallback bool) bool {
+	v, err := o.AsBool(name)
+	if err != nil {
+		return fallback
+	}
+	return v
+}
+
+func (o Object) PutBool(name string, value bool) Obj {
 	o[name] = value
 	return o
 }
@@ -92,7 +108,15 @@ func (o Object) AsFloat64(name string) (float64, error) {
 	return asFloat64(v)
 }
 
-func (o Object) SetFloat64(name string, value float64) Obj {
+func (o Object) OptFloat64(name string, fallback float64) float64 {
+	v, err := o.AsFloat64(name)
+	if err != nil {
+		return fallback
+	}
+	return v
+}
+
+func (o Object) PutFloat64(name string, value float64) Obj {
 	o[name] = value
 	return o
 }
@@ -105,7 +129,15 @@ func (o Object) AsString(name string) (string, error) {
 	return asString(v)
 }
 
-func (o Object) SetString(name string, value string) Obj {
+func (o Object) OptString(name string, fallback string) string {
+	v, err := o.AsString(name)
+	if err != nil {
+		return fallback
+	}
+	return v
+}
+
+func (o Object) PutString(name string, value string) Obj {
 	o[name] = value
 	return o
 }
@@ -121,7 +153,17 @@ func (o Object) AsObject(name string) (Obj, error) {
 	return nil, fmt.Errorf("%s is not an object (%v)", name, reflect.TypeOf(v))
 }
 
-func (o Object) SetObject(name string, value Obj) Obj {
+func (o Object) OptObject(name string) Obj {
+	v, err := o.AsObject(name)
+	if err != nil {
+		v = Object{}
+		o.PutObject(name, v)
+		return v
+	}
+	return v
+}
+
+func (o Object) PutObject(name string, value Obj) Obj {
 	o[name] = value
 	return o
 }
@@ -146,7 +188,17 @@ func (o Object) AsArray(name string) (Arr, error) {
 	return nil, fmt.Errorf("value in field '%s' is not an array, is type '%v'", name, reflect.TypeOf(v))
 }
 
-func (o Object) SetArray(name string, value Arr) Obj {
+func (o Object) OptArray(name string) Arr {
+	v, err := o.AsArray(name)
+	if err != nil {
+		v = &Array{}
+		o.PutArray(name, v)
+		return v
+	}
+	return v
+}
+
+func (o Object) PutArray(name string, value Arr) Obj {
 	o[name] = value
 	return o
 }
@@ -194,7 +246,15 @@ func (a *Array) AsInt64(idx int) (int64, error) {
 	return asInt64((*a)[idx])
 }
 
-func (a *Array) SetInt64(idx int, value int64) Arr {
+func (a *Array) OptInt64(idx int, fallback int64) int64 {
+	v, err := a.AsInt64(idx)
+	if err != nil {
+		return fallback
+	}
+	return v
+}
+
+func (a *Array) PutInt64(idx int, value int64) Arr {
 	(*a)[idx] = value
 	return a
 }
@@ -211,7 +271,15 @@ func (a *Array) AsBool(idx int) (bool, error) {
 	return asBool((*a)[idx])
 }
 
-func (a *Array) SetBool(idx int, value bool) Arr {
+func (a *Array) OptBool(idx int, fallback bool) bool {
+	v, err := a.AsBool(idx)
+	if err != nil {
+		return fallback
+	}
+	return v
+}
+
+func (a *Array) PutBool(idx int, value bool) Arr {
 	(*a)[idx] = value
 	return a
 }
@@ -228,7 +296,15 @@ func (a *Array) AsFloat64(idx int) (float64, error) {
 	return asFloat64((*a)[idx])
 }
 
-func (a *Array) SetFloat64(idx int, value float64) Arr {
+func (a *Array) OptFloat64(idx int, fallback float64) float64 {
+	v, err := a.AsFloat64(idx)
+	if err != nil {
+		return fallback
+	}
+	return v
+}
+
+func (a *Array) PutFloat64(idx int, value float64) Arr {
 	(*a)[idx] = value
 	return a
 }
@@ -245,7 +321,15 @@ func (a *Array) AsString(idx int) (string, error) {
 	return asString((*a)[idx])
 }
 
-func (a *Array) SetString(idx int, value string) Arr {
+func (a *Array) OptString(idx int, fallback string) string {
+	v, err := a.AsString(idx)
+	if err != nil {
+		return fallback
+	}
+	return v
+}
+
+func (a *Array) PutString(idx int, value string) Arr {
 	(*a)[idx] = value
 	return a
 }
@@ -268,7 +352,17 @@ func (a *Array) AsObject(idx int) (Obj, error) {
 	return nil, fmt.Errorf("element at index %d is not an object (%v)", idx, reflect.TypeOf((*a)[idx]))
 }
 
-func (a *Array) SetObject(idx int, value Obj) Arr {
+func (a *Array) OptObject(idx int) Obj {
+	v, err := a.AsObject(idx)
+	if err != nil {
+		v = Object{}
+		(*a)[idx] = v
+		return v
+	}
+	return v
+}
+
+func (a *Array) PutObject(idx int, value Obj) Arr {
 	(*a)[idx] = value
 	return a
 }
@@ -288,16 +382,44 @@ func (a *Array) AsArray(idx int) (Arr, error) {
 	if arr, ok := v.(Arr); ok {
 		return arr, nil
 	}
+	if arr, ok := v.(*[]interface{}); ok {
+		return (*Array)(arr), nil
+	}
+
 	//perform a replacement to a slice pointer, so that the thing can exchange the slice struct, e.g. for appending
 	if arr, ok := v.([]interface{}); ok {
 		tmp := Array(arr)
 		(*a)[idx] = &tmp
 		return &tmp, nil
 	}
-	return nil, fmt.Errorf("%d is not an object (%v)", idx, reflect.TypeOf(v))
+
+	// hacky way of doing so, can we inspect the base type instead?
+	ref := reflect.ValueOf(v)
+	if ref.Kind() == reflect.Ptr {
+		if ref.Elem().Kind() == reflect.Slice{
+			if ref.Elem().Type().String() == "jsonml.jNode"{
+				tmp := v.(*[]interface{})
+				return (*Array)(tmp), nil
+			}
+		}
+//TODO fix me by introducing an interface contract to return the correct base type, to perform the conversion
+	}
+
+	return nil, fmt.Errorf("value at index '%d' is not an array, but '%v'", idx, reflect.TypeOf(v))
 }
 
-func (a *Array) SetArray(idx int, value Arr) Arr {
+func (a *Array) OptArray(idx int) Arr {
+	v, err := a.AsArray(idx)
+	if err != nil {
+		fmt.Println(err)
+		v = &Array{}
+		(*a)[idx] = v
+		return v
+	}
+	return v
+}
+
+func (a *Array) PutArray(idx int, value Arr) Arr {
 	(*a)[idx] = value
 	return a
 }

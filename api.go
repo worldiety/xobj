@@ -39,38 +39,58 @@ type Obj interface {
 	// AsInt64 tries to convert the associated value into an int64, otherwise returns an error
 	AsInt64(name string) (int64, error)
 
-	// SetInt64 removes the existing field and replaces its value. Returns the object for a builder pattern.
-	SetInt64(name string, value int64) Obj
+	// OptInt64 tries to convert the associated value into an int64 or returns the fallback
+	OptInt64(name string, fallback int64) int64
+
+	// PutInt64 removes the existing field and replaces its value. Returns the object for a builder pattern.
+	PutInt64(name string, value int64) Obj
 
 	// AsBool tries to convert the associated value into a boolean, otherwise returns an error
 	AsBool(name string) (bool, error)
 
-	// SetBool removes the existing field and replaces its value. Returns the object for a builder pattern.
-	SetBool(name string, value bool) Obj
+	// OptBool tries to convert the associated value into a bool or returns the fallback
+	OptBool(name string, fallback bool) bool
+
+	// PutBool removes the existing field and replaces its value. Returns the object for a builder pattern.
+	PutBool(name string, value bool) Obj
 
 	// AsFloat64 tries to convert the associated value into an float64, otherwise returns an error
 	AsFloat64(name string) (float64, error)
 
-	// SetFloat64 removes the existing field and replaces its value. Returns the object for a builder pattern.
-	SetFloat64(name string, value float64) Obj
+	// OptFloat64 tries to convert the associated value into a float64 or returns the fallback
+	OptFloat64(name string, fallback float64) float64
+
+	// PutFloat64 removes the existing field and replaces its value. Returns the object for a builder pattern.
+	PutFloat64(name string, value float64) Obj
 
 	// AsString tries to convert the associated value into an string, otherwise returns an error
 	AsString(name string) (string, error)
 
-	// SetString removes the existing field and replaces its value. Returns the object for a builder pattern.
-	SetString(name string, value string) Obj
+	// OptString tries to convert the associated value into a string or returns the fallback
+	OptString(name string, fallback string) string
+
+	// PutString removes the existing field and replaces its value. Returns the object for a builder pattern.
+	PutString(name string, value string) Obj
 
 	// AsObject returns the value as an Obj, if the type matches, otherwise returns an error
 	AsObject(name string) (Obj, error)
 
-	// SetObject removes the existing field and replaces its value. Returns the object for a builder pattern.
-	SetObject(name string, value Obj) Obj
+	// OptObject returns the value as an Obj, if the type matches, otherwise creates(!) a new
+	// Object, puts it to the named field and returns the new instance.
+	OptObject(name string) Obj
+
+	// PutObject removes the existing field and replaces its value. Returns the object for a builder pattern.
+	PutObject(name string, value Obj) Obj
 
 	// AsObject returns the value as an Arr, if the type matches, otherwise returns an error
 	AsArray(name string) (Arr, error)
 
-	// SetArray removes the existing field and replaces its value. Returns the object for a builder pattern.
-	SetArray(name string, value Arr) Obj
+	// OptArray returns the value as an Array, if the type matches, otherwise creates(!) a new
+	// Array, puts it to the named field and returns the new instance.
+	OptArray(name string) Arr
+
+	// PutArray removes the existing field and replaces its value. Returns the object for a builder pattern.
+	PutArray(name string, value Arr) Obj
 
 	// String provides the stringer interface, which returns a compact JSON serialization
 	String() string
@@ -96,9 +116,12 @@ type Arr interface {
 	// AsInt64 tries to convert the associated value into an int64, otherwise returns an error
 	AsInt64(idx int) (int64, error)
 
-	// SetInt64 replaces the value at the given index. Returns the array for a builder pattern. Panics if idx is out
+	// OptInt64 tries to convert the associated value into an int64 or returns the fallback
+	OptInt64(idx int, fallback int64) int64
+
+	// PutInt64 replaces the value at the given index. Returns the array for a builder pattern. Panics if idx is out
 	// of bounds.
-	SetInt64(idx int, value int64) Arr
+	PutInt64(idx int, value int64) Arr
 
 	// AddInt64 appends the value and returns the array.
 	AddInt64(value int64) Arr
@@ -106,9 +129,12 @@ type Arr interface {
 	// AsBool tries to convert the associated value into a boolean, otherwise returns an error
 	AsBool(idx int) (bool, error)
 
-	// SetBool replaces the value at the given index. Returns the array for a builder pattern. Panics if idx is out
+	// OptBool tries to convert the associated value into a bool or returns the fallback
+	OptBool(idx int, fallback bool) bool
+
+	// PutBool replaces the value at the given index. Returns the array for a builder pattern. Panics if idx is out
 	// of bounds.
-	SetBool(idx int, value bool) Arr
+	PutBool(idx int, value bool) Arr
 
 	// AddBool appends the value and returns the array.
 	AddBool(value bool) Arr
@@ -116,9 +142,12 @@ type Arr interface {
 	// AsFloat64 tries to convert the associated value into an float64, otherwise returns an error
 	AsFloat64(idx int) (float64, error)
 
-	// SetFloat64 replaces the value at the given index. Returns the array for a builder pattern. Panics if idx is out
+	// OptFloat64 tries to convert the associated value into a float64 or returns the fallback
+	OptFloat64(idx int, fallback float64) float64
+
+	// PutFloat64 replaces the value at the given index. Returns the array for a builder pattern. Panics if idx is out
 	// of bounds.
-	SetFloat64(idx int, value float64) Arr
+	PutFloat64(idx int, value float64) Arr
 
 	// AddFloat64 appends the value and returns the array.
 	AddFloat64(value float64) Arr
@@ -126,9 +155,12 @@ type Arr interface {
 	// AsString tries to convert the associated value into an string, otherwise returns an error
 	AsString(idx int) (string, error)
 
-	// SetString replaces the value at the given index. Returns the array for a builder pattern. Panics if idx is out
+	// OptString tries to convert the associated value into a string or returns the fallback
+	OptString(idx int, fallback string) string
+
+	// PutString replaces the value at the given index. Returns the array for a builder pattern. Panics if idx is out
 	// of bounds.
-	SetString(idx int, value string) Arr
+	PutString(idx int, value string) Arr
 
 	// AddString appends the value and returns the array.
 	AddString(value string) Arr
@@ -136,9 +168,13 @@ type Arr interface {
 	// AsObject returns the value as an Obj, if the type matches, otherwise returns an error
 	AsObject(idx int) (Obj, error)
 
-	// SetObject replaces the value at the given index. Returns the array for a builder pattern. Panics if idx is out
+	// OptObject returns the value as an Object, if the type matches, otherwise creates(!) a new
+	// Object, puts it to the index and returns the new instance. Panics if index is out of bounds.
+	OptObject(idx int) Obj
+
+	// PutObject replaces the value at the given index. Returns the array for a builder pattern. Panics if idx is out
 	// of bounds.
-	SetObject(idx int, value Obj) Arr
+	PutObject(idx int, value Obj) Arr
 
 	// AddInt64 appends the value and returns the array.
 	AddObject(value Obj) Arr
@@ -146,9 +182,13 @@ type Arr interface {
 	// AsObject returns the value as an Arr, if the type matches, otherwise returns an error
 	AsArray(idx int) (Arr, error)
 
-	// SetArray replaces the value at the given index. Returns the array for a builder pattern. Panics if idx is out
+	// OptArray returns the value as an Array, if the type matches, otherwise creates(!) a new
+	// Array, puts it to the index and returns the new instance. Panics if index is out of bounds.
+	OptArray(idx int) Arr
+
+	// PutArray replaces the value at the given index. Returns the array for a builder pattern. Panics if idx is out
 	// of bounds.
-	SetArray(idx int, value Arr) Arr
+	PutArray(idx int, value Arr) Arr
 
 	// AddArray appends the value and returns the array.
 	AddArray(value Arr) Arr
