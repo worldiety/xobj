@@ -1,110 +1,215 @@
 package xobj
 
-import "fmt"
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"github.com/worldiety/jsonml"
+	"strconv"
+)
 
-var unmarshaler []Unmarshaler
-var ErrUnsupportedFormat = fmt.Errorf("unsupported format")
-
-func init() {
-	RegisterUnmarshaler(jsonUnmarshaler{})
-}
-
-type Unmarshaler interface {
-	Unmarshal(data []byte) (Node, error)
-}
-
-// RegisterUnmarshaler allows to extend the xobj support for further formats
-func RegisterUnmarshaler(u Unmarshaler) {
-	unmarshaler = append(unmarshaler, u)
-}
-
-// Unmarshal autodetects the kind of format and decodes it into
-// a Node
-func Unmarshal(data []byte) (Node, error) {
-	for _, u := range unmarshaler {
-		elem, err := u.Unmarshal(data)
-		if err != nil {
-			if err != ErrUnsupportedFormat {
-				return nil, err
-			}
-
-		} else {
-			return elem, nil
-		}
-	}
-	return nil, ErrUnsupportedFormat
-}
-
-// A Node is more or less the same as the XML ElementNode. It also represents a json field/property.
-type Node interface {
-	// Name return the name of the node.
-	//
-	// XML: If node is an Element the elements name is returned. If node is Attr, the attributes name is returned.
-	// Any other nodes have no name.
-	Name() string
-
-	// Get resolves the first child with the given name.
-	//
-	// XML: If node is Attr, CDATA, Comment, etc. always a nil node is returned. If node is Element, the first Element
-	// with that name is returned, otherwise a nil node. To read an attribute of this node, you need to prefix the name
-	// with a :
-	//
-	// JSON: Simply returns the according field or a nil node. If this node refers to an array and the name
-	// looks like suitable index within range, the value is returned.
-	Get(name string) Node
-
-	// IsNil checks if this node is a nil node.
-	IsNil() bool
-
-	// IsNull returns true if this is a nil node or
-	//
-	// XML: #AsString() evaluates to "null"
-	//
-	// JSON: the value is the natural null or #AsString() evaluates to "null"
-	//
-	// struct: the same as JSON
-	IsNull() bool
-
-	// Remove detaches this node from its parent. Returns true if the operation was successful.
-	Remove() bool
-
-	// AsString returns a naive string interpretation.
-	//
-	// XML: If node is an Attr, a Comment or a Text, its content is simply returned. If node is an Element, all
-	// Text nodes are concated in order of appearance recursively.
-	//
-	// JSON: Only returns a naive string interpolation of bool, number and null if it is not an array or object.
-	// In the latter, just an empty string is returned.
-	AsString() string
-
-	// SetString puts the string, removing any other data.
-	//
-	// XML: If node is an Attr, it's value is updated. If node is an Element, all Text is removed and replaced
-	// by a single text node.
-	//
-	// JSON: The value is replaced with the given string value
-	//
-	// struct: It tries to duck type the string into the according field. int64 may become 0, float64 NaN, bool false.
-	SetString(str string)
-
-	// Nodes returns a NodeList. Semantic is defined as follows:
-	//
-	// XML: If node is an Element, it's attributes (prefixed by :) and it's direct child nodes are returned
-	//
-	// JSON: If node is an Object, it's fields are returned. If node is a primitive (bool, string, number, nil)
-	// an empty list is returned. If node is an array, each element in the array is a node in the list.
-	//
-	// struct: Just the same rules as JSON
-	Nodes() NodeList
-}
-
-// A NodeList is a collection of arbitrary node types.
-type NodeList interface {
-	// Size returns the amount of elements in the list
+// StrList is used instead of a slice, to be directly compatible with gomobile.
+type StrList interface {
+	// Size returns the amount of entries in the list
 	Size() int
 
-	// Get returns the element at the given index. Panics if out of range.
-	Get(idx int) Node
+	// Get returns the string at the given index. Panics if out of bounds.
+	Get(idx int) string
 }
 
+// An Obj allows a key/value oriented access with various comfort functions.
+type Obj interface {
+	// Keys returns a list of declared string names
+	Keys() StrList
 
+	// Get returns the generic value associated with the key. You cannot distinguish a null value from the non-existence
+	// of the key. Use #Has() method to validate. The method is discarded when used with gomobile.
+	Get(name string) interface{}
+
+	// Put inserts just a generic value and associates it with the key. The method is discarded when used with gomobile.
+	Put(name string, value interface{}) Obj
+
+	// Remove deletes the key/value combination from this object. Returns the object for a builder pattern.
+	// Returning the Obj avoids discarding the method in gomobile.
+	Remove(name string) Obj
+
+	// Has returns true, if the given key is available in this object.
+	Has(name string) bool
+
+	// AsInt64 tries to convert the associated value into an int64, otherwise returns an error
+	AsInt64(name string) (int64, error)
+
+	// SetInt64 removes the existing field and replaces its value. Returns the object for a builder pattern.
+	SetInt64(name string, value int64) Obj
+
+	// AsBool tries to convert the associated value into a boolean, otherwise returns an error
+	AsBool(name string) (bool, error)
+
+	// SetBool removes the existing field and replaces its value. Returns the object for a builder pattern.
+	SetBool(name string, value bool) Obj
+
+	// AsFloat64 tries to convert the associated value into an float64, otherwise returns an error
+	AsFloat64(name string) (float64, error)
+
+	// SetFloat64 removes the existing field and replaces its value. Returns the object for a builder pattern.
+	SetFloat64(name string, value float64) Obj
+
+	// AsString tries to convert the associated value into an string, otherwise returns an error
+	AsString(name string) (string, error)
+
+	// SetString removes the existing field and replaces its value. Returns the object for a builder pattern.
+	SetString(name string, value string) Obj
+
+	// AsObject returns the value as an Obj, if the type matches, otherwise returns an error
+	AsObject(name string) (Obj, error)
+
+	// SetObject removes the existing field and replaces its value. Returns the object for a builder pattern.
+	SetObject(name string, value Obj) Obj
+
+	// AsObject returns the value as an Arr, if the type matches, otherwise returns an error
+	AsArray(name string) (Arr, error)
+
+	// SetArray removes the existing field and replaces its value. Returns the object for a builder pattern.
+	SetArray(name string, value Arr) Obj
+
+	// String provides the stringer interface, which returns a compact JSON serialization
+	String() string
+}
+
+// An Arr is typed accessor for index-based and ordered access of data.
+type Arr interface {
+	// Size returns the amount of entries in this Array
+	Size() int
+
+	// Get returns the generic value associated with the index.
+	// The method is discarded when used with gomobile.
+	Get(idx int) interface{}
+
+	// Put replaces the value at the given index.
+	// The method is discarded when used with gomobile.
+	Put(idx int, value interface{}) Arr
+
+	// Remove deletes the value at the given index. Returns the Arr for a builder pattern.
+	// Returning the Obj avoids discarding the method in gomobile.
+	Remove(idx int) Arr
+
+	// AsInt64 tries to convert the associated value into an int64, otherwise returns an error
+	AsInt64(idx int) (int64, error)
+
+	// SetInt64 replaces the value at the given index. Returns the array for a builder pattern. Panics if idx is out
+	// of bounds.
+	SetInt64(idx int, value int64) Arr
+
+	// AddInt64 appends the value and returns the array.
+	AddInt64(value int64) Arr
+
+	// AsBool tries to convert the associated value into a boolean, otherwise returns an error
+	AsBool(idx int) (bool, error)
+
+	// SetBool replaces the value at the given index. Returns the array for a builder pattern. Panics if idx is out
+	// of bounds.
+	SetBool(idx int, value bool) Arr
+
+	// AddBool appends the value and returns the array.
+	AddBool(value bool) Arr
+
+	// AsFloat64 tries to convert the associated value into an float64, otherwise returns an error
+	AsFloat64(idx int) (float64, error)
+
+	// SetFloat64 replaces the value at the given index. Returns the array for a builder pattern. Panics if idx is out
+	// of bounds.
+	SetFloat64(idx int, value float64) Arr
+
+	// AddFloat64 appends the value and returns the array.
+	AddFloat64(value float64) Arr
+
+	// AsString tries to convert the associated value into an string, otherwise returns an error
+	AsString(idx int) (string, error)
+
+	// SetString replaces the value at the given index. Returns the array for a builder pattern. Panics if idx is out
+	// of bounds.
+	SetString(idx int, value string) Arr
+
+	// AddString appends the value and returns the array.
+	AddString(value string) Arr
+
+	// AsObject returns the value as an Obj, if the type matches, otherwise returns an error
+	AsObject(idx int) (Obj, error)
+
+	// SetObject replaces the value at the given index. Returns the array for a builder pattern. Panics if idx is out
+	// of bounds.
+	SetObject(idx int, value Obj) Arr
+
+	// AddInt64 appends the value and returns the array.
+	AddObject(value Obj) Arr
+
+	// AsObject returns the value as an Arr, if the type matches, otherwise returns an error
+	AsArray(idx int) (Arr, error)
+
+	// SetArray replaces the value at the given index. Returns the array for a builder pattern. Panics if idx is out
+	// of bounds.
+	SetArray(idx int, value Arr) Arr
+
+	// AddArray appends the value and returns the array.
+	AddArray(value Arr) Arr
+
+	// String provides the stringer interface, which returns a compact JSON serialization
+	String() string
+}
+
+// ToString converts anything to a string
+func ToString(any interface{}) string {
+
+	switch t := any.(type) {
+	case string:
+		return t
+	case float64:
+		return strconv.FormatFloat(t, 'g', -1, 64)
+	case int64:
+		return strconv.FormatInt(t, 10)
+	case bool:
+		return strconv.FormatBool(t)
+	}
+	return fmt.Sprintf("%v", any)
+}
+
+// NewObj creates a new instance of Object
+func NewObj() Obj {
+	return Object{}
+}
+
+// NewArr creates a new instance of Array
+func NewArr() Arr {
+	return &Array{}
+}
+
+// Parse tries to parse the given bytes either as XML or as JSON.
+// If data looks like XML, a jsonml transformation is applied, which
+// is available in the field 'xml'.
+// If data represents an array, it is wrapped automatically into
+// an object, using the field name "array".
+func Parse(data []byte) (Obj, error) {
+	obj := Object{}
+	err := json.Unmarshal(data, &obj)
+	if err == nil {
+		return obj, nil
+	}
+
+	// failed with json object, try to parse as array
+	arr := &Array{}
+	err = json.Unmarshal(data, &arr)
+	if err == nil {
+		obj.Put("array", arr)
+		return obj, nil
+	}
+
+	// failed with json array, try to parse as xml
+	slice, err := jsonml.ToJSON(true, bytes.NewReader(data))
+	if err == nil {
+		obj.Put("xml", slice)
+		return obj, err
+	}
+
+	// failed, give up
+	return obj, err
+}
