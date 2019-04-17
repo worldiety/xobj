@@ -1,10 +1,7 @@
 package xobj
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"github.com/worldiety/jsonml"
 	"strconv"
 )
 
@@ -35,6 +32,10 @@ type Obj interface {
 
 	// Has returns true, if the given key is available in this object.
 	Has(name string) bool
+
+	// IsNull returns false if either the Obj has no such field or its field value is null/nil. Use #Has() to
+	// differentiate between the cases.
+	IsNull(name string) bool
 
 	// AsInt64 tries to convert the associated value into an int64, otherwise returns an error
 	AsInt64(name string) (int64, error)
@@ -108,6 +109,9 @@ type Arr interface {
 	// Put replaces the value at the given index.
 	// The method is discarded when used with gomobile.
 	Put(idx int, value interface{}) Arr
+
+	// IsNull checks if the value at the given index is null. It also returns false, if idx is out of bounds.
+	IsNull(idx int) bool
 
 	// Remove deletes the value at the given index. Returns the Arr for a builder pattern.
 	// Returning the Obj avoids discarding the method in gomobile.
@@ -209,6 +213,8 @@ func ToString(any interface{}) string {
 		return strconv.FormatInt(t, 10)
 	case bool:
 		return strconv.FormatBool(t)
+	case fmt.Stringer:
+		return t.String()
 	}
 	return fmt.Sprintf("%v", any)
 }
@@ -221,35 +227,4 @@ func NewObj() Obj {
 // NewArr creates a new instance of Array
 func NewArr() Arr {
 	return &Array{}
-}
-
-// Parse tries to parse the given bytes either as XML or as JSON.
-// If data looks like XML, a jsonml transformation is applied, which
-// is available in the field 'xml'.
-// If data represents an array, it is wrapped automatically into
-// an object, using the field name "array".
-func Parse(data []byte) (Obj, error) {
-	obj := Object{}
-	err := json.Unmarshal(data, &obj)
-	if err == nil {
-		return obj, nil
-	}
-
-	// failed with json object, try to parse as array
-	arr := &Array{}
-	err = json.Unmarshal(data, &arr)
-	if err == nil {
-		obj.Put("array", arr)
-		return obj, nil
-	}
-
-	// failed with json array, try to parse as xml
-	slice, err := jsonml.ToJSON(true, bytes.NewReader(data))
-	if err == nil {
-		obj.Put("xml", slice)
-		return obj, err
-	}
-
-	// failed, give up
-	return obj, err
 }

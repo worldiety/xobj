@@ -7,6 +7,14 @@ import (
 	"strconv"
 )
 
+// wrapper is used to avoid type assertion on hidden types. This is a problem
+// because one can neither type assert hidden types nor their public base types.
+type wrapper interface {
+	// Unwrap returns a copy of the slice, so be careful: changing values at existing indices will probably work
+	// but things like appending definitely not
+	Unwrap() []interface{}
+}
+
 //=
 
 var _ StrList = (StringList)(nil)
@@ -54,6 +62,10 @@ func (o Object) Remove(name string) Obj {
 func (o Object) Has(name string) bool {
 	_, has := o[name]
 	return has
+}
+
+func (o Object) IsNull(name string) bool {
+	return o[name] == nil
 }
 
 // AsInt64 uses a lot of type assertions to optimize performance
@@ -232,6 +244,13 @@ func (a *Array) Put(idx int, value interface{}) Arr {
 	return a
 }
 
+func (a *Array) IsNull(idx int) bool {
+	if idx < 0 || idx >= len(*a) {
+		return true
+	}
+	return (*a)[idx] == nil
+}
+
 func (a *Array) Remove(idx int) Arr {
 	copy((*a)[idx:], (*a)[idx+1:])
 	(*a)[len(*a)-1] = nil //avoid future memory leak of the last element in "hidden" slice element
@@ -393,16 +412,11 @@ func (a *Array) AsArray(idx int) (Arr, error) {
 		return &tmp, nil
 	}
 
-	// hacky way of doing so, can we inspect the base type instead?
-	ref := reflect.ValueOf(v)
-	if ref.Kind() == reflect.Ptr {
-		if ref.Elem().Kind() == reflect.Slice{
-			if ref.Elem().Type().String() == "jsonml.jNode"{
-				tmp := v.(*[]interface{})
-				return (*Array)(tmp), nil
-			}
-		}
-//TODO fix me by introducing an interface contract to return the correct base type, to perform the conversion
+	//perform a replacement by using a slice wrapper, performing a type conversion
+	if arr, ok := v.(wrapper); ok {
+		tmp := Array(arr.Unwrap())
+		(*a)[idx] = &tmp
+		return &tmp, nil
 	}
 
 	return nil, fmt.Errorf("value at index '%d' is not an array, but '%v'", idx, reflect.TypeOf(v))

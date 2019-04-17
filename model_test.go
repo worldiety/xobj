@@ -93,6 +93,7 @@ func TestParse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	fmt.Println(obj.String())
 
 	list := obj.Keys()
 	if list.Size() != 2 {
@@ -192,10 +193,9 @@ func TestParse3(t *testing.T) {
 	}
 	fmt.Println(arr.String())
 
-	fmt.Println(obj.OptArray("xml").
-		OptArray(3))
 	caption := obj.OptArray("xml").OptArray(3).OptObject(1).OptString("caption", "")
-	if caption != "caption" {
+
+	if caption != "a tablet with fruits" {
 		t.Fatal("unexpected", caption)
 	}
 }
