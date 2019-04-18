@@ -49,3 +49,15 @@ func TestRequestBuilder_Get3(t *testing.T) {
 		t.Fatal("expected timeout")
 	}
 }
+
+func TestRequestBuilder_Get4(t *testing.T) {
+	_, status, _ := NewRequest().
+		Host("test.worldiety.org").
+		Path("not found").
+		Get()
+
+	if status != 404 {
+		t.Fatal("unexpected", status)
+	}
+
+}

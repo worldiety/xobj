@@ -124,6 +124,32 @@ func (r *RequestBuilder) Get() (Obj, int, error) {
 	return r.genericObjRequest("GET")
 }
 
+// GetBytes performs a get request based on the current configuration and loads the entire response body into a slice.
+// Otherwise returns an error. Tries to always return the http status code.
+func (r *RequestBuilder) GetBytes() ([]byte, int, error) {
+	r.method = "GET"
+	var resData []byte
+	var statusCode int
+	err := r.doRequest(func(req *http.Request, res *http.Response) error {
+		statusCode = res.StatusCode
+		data, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
+		resData = data
+		return err
+	})
+	return resData, statusCode, err
+}
+
+// Do performs a request based on the current configuration and invokes the callback.
+// Otherwise returns an error, and delegates any error from the callback. Use this, if you need
+// full control on the response or e.g. want to stream the body content.
+func (r *RequestBuilder) Do(method string, callback func(req *http.Request, res *http.Response) error) error {
+	r.method = method
+	return r.doRequest(callback)
+}
+
 // Put performs a put request based on the current configuration and tries to parse the result into an obj.
 // Otherwise returns an error. Tries to always return the http status code.
 func (r *RequestBuilder) Put() (Obj, int, error) {
@@ -237,6 +263,10 @@ func (r *RequestBuilder) doRequest(onResult func(req *http.Request, res *http.Re
 	return nil
 }
 
+// silentClose just invokes the closer and logs any error
 func silentClose(closer io.Closer) {
-	_ = closer.Close()
+	err := closer.Close()
+	if err != nil {
+		logger.Info(Fields{"err": err.Error()})
+	}
 }
