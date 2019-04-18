@@ -228,3 +228,45 @@ func NewObj() Obj {
 func NewArr() Arr {
 	return &Array{}
 }
+
+// UnwrapObj allocates new maps and slices for Obj and Arr instances.
+func UnwrapObj(obj Obj) map[string]interface{} {
+	res := make(map[string]interface{})
+	keys := obj.Keys()
+	for i := 0; i < keys.Size(); i++ {
+		k := keys.Get(i)
+		c, err := obj.AsObject(k)
+		if err == nil {
+			res[keys.Get(i)] = UnwrapObj(c)
+			continue
+		}
+
+		a, err := obj.AsArray(k)
+		if err == nil {
+			res[keys.Get(i)] = UnwrapArr(a)
+			continue
+		}
+		res[k] = obj.Get(k)
+	}
+	return res
+}
+
+// UnwrapArr allocates new maps and slices for Obj and Arr instances.
+func UnwrapArr(arr Arr) []interface{} {
+	res := make([]interface{}, arr.Size())
+	for i := 0; i < arr.Size(); i++ {
+		c, err := arr.AsObject(i)
+		if err == nil {
+			res[i] = UnwrapObj(c)
+			continue
+		}
+
+		a, err := arr.AsArray(i)
+		if err == nil {
+			res[i] = UnwrapArr(a)
+			continue
+		}
+		res[i] = arr.Get(i)
+	}
+	return res
+}
