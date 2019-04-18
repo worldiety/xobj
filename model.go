@@ -229,7 +229,8 @@ func NewArr() Arr {
 	return &Array{}
 }
 
-// UnwrapObj allocates new maps and slices for Obj and Arr instances.
+// UnwrapObj allocates new maps and slices for Obj and Arr instances. We do not cast recursively
+// because it would change internal types, values and pointers while running causing all sorts of bugs.
 func UnwrapObj(obj Obj) map[string]interface{} {
 	res := make(map[string]interface{})
 	keys := obj.Keys()
@@ -251,7 +252,8 @@ func UnwrapObj(obj Obj) map[string]interface{} {
 	return res
 }
 
-// UnwrapArr allocates new maps and slices for Obj and Arr instances.
+// UnwrapArr allocates new maps and slices for Obj and Arr instances. We do not cast recursively
+// because it would change internal types, values and pointers while running causing all sorts of bugs.
 func UnwrapArr(arr Arr) []interface{} {
 	res := make([]interface{}, arr.Size())
 	for i := 0; i < arr.Size(); i++ {
