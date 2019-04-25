@@ -2,6 +2,7 @@ package xobj
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 )
 
@@ -203,7 +204,9 @@ type Arr interface {
 
 // ToString converts anything to a string
 func ToString(any interface{}) string {
-
+	if any == nil {
+		return ""
+	}
 	switch t := any.(type) {
 	case string:
 		return t
@@ -217,6 +220,55 @@ func ToString(any interface{}) string {
 		return t.String()
 	}
 	return fmt.Sprintf("%v", any)
+}
+
+// ToFloat64 converts anything to a float
+func ToFloat64(any interface{}) float64 {
+	if any == nil {
+		return math.NaN()
+	}
+	switch t := any.(type) {
+
+	case float64:
+		return t
+	case int64:
+		return float64(t)
+	case uint64:
+		return float64(t)
+	case int32:
+		return float64(t)
+	case uint32:
+		return float64(t)
+	case int16:
+		return float64(t)
+	case uint16:
+		return float64(t)
+	case uint8:
+		return float64(t)
+	case int8:
+		return float64(t)
+	case bool:
+		if t {
+			return 1
+		} else {
+			return 0
+		}
+	case string:
+		return parseStr(t)
+	case fmt.Stringer:
+		return parseStr(t.String())
+	default:
+		return parseStr(fmt.Sprintf("%v", any))
+
+	}
+
+}
+
+func parseStr(str string) float64 {
+	if f, err := strconv.ParseFloat(str, 64); err == nil {
+		return f
+	}
+	return math.NaN()
 }
 
 // NewObj creates a new instance of Object
