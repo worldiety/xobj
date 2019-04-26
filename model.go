@@ -1,6 +1,7 @@
 package xobj
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -218,6 +219,23 @@ func ToString(any interface{}) string {
 		return strconv.FormatBool(t)
 	case fmt.Stringer:
 		return t.String()
+	case []interface{}:
+		data, err := json.Marshal(t)
+		if err != nil {
+			logger.Info(Fields{"msg": "failed to marshal", "err": err})
+			return fmt.Sprintf("%v", any)
+		}
+		return string(data)
+	case map[string]interface{}:
+		data, err := json.Marshal(t)
+		if err != nil {
+			logger.Info(Fields{"msg": "failed to marshal", "err": err})
+			return fmt.Sprintf("%v", any)
+		}
+		return string(data)
+
+	case *[]interface{}:
+		return ToString(*t)
 	}
 	return fmt.Sprintf("%v", any)
 }
